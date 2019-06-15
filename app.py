@@ -18,7 +18,8 @@ CORS(app)
 @app.route('/')
 def hello_world():
     return 'Hello World! This is the backend API of Reseed (https://reseed.tongyifan.me). ' \
-           'If you want to use it for development, please contact with me by telegram - @tongyifan'
+           'If you want to use it for development, please contact with me by telegram - ' \
+           '<a href="https://t.me/tongyifan">@tongyifan</a>'
 
 
 @app.route('/upload_json', methods=['POST'])
