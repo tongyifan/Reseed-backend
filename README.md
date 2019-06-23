@@ -1,7 +1,7 @@
 <p align="center">
 <img src="https://i.loli.net/2019/06/16/5d0527ce25e3433629.png"><br/>
 <img src="https://img.shields.io/badge/Used-Python%20Vue-blue.svg">
-<a href="https://github.com/tongyifan/Reseed-backend/LICENSE" title="GitHub license"><img src="https://img.shields.io/github/license/tongyifan/Reseed-backend.svg?label=License"></a>
+<a href="https://github.com/tongyifan/Reseed-backend/blob/master/LICENSE" title="GitHub license"><img src="https://img.shields.io/github/license/tongyifan/Reseed-backend.svg?label=License"></a>
 <a href="https://t.me/reseed_tongyifan_me"><img src="https://img.shields.io/badge/telegram-Channel-blue.svg?logo=telegram"></a>
 </p>
 
@@ -25,3 +25,13 @@ Reseed是一个十分易于使用的跨站辅种项目，目前提供了国内�
 
 ## 使用方法
 见[Wiki-使用说明](https://github.com/tongyifan/Reseed-backend/wiki/%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E)或[TJUPT论坛(图文)](https://tjupt.org/forums.php?action=viewtopic&topicid=15466)
+
+## 常见问题
+见[Wiki-常见问题](https://github.com/tongyifan/Reseed-backend/wiki/%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
+
+## 需求提交/错误汇报/如何找到我
+* [**GitHub Issue**](https://github.com/tongyifan/Reseed-backend/issues)
+* [@tongyifan(Telegram)](https://t.me/tongyifan)
+* [TJUPT论坛](https://tjupt.org/forums.php?action=viewtopic&topicid=15466) / [站内信](https://tjupt.org/sendmessage.php?receiver=57375) / QQ群
+* 其他你能找到我的各种途径...
+
