@@ -27,6 +27,11 @@ class Database:
     def select_torrent(self, name):
         return self.exec("SELECT * FROM `torrents` WHERE `name` = '{}'".format(pymysql.escape_string(str(name))))
 
+    def check_torrent_valid(self, sid, site):
+        return self.exec(
+            "SELECT COUNT(*) AS c FROM `torrent_records` WHERE `sid` = '{}' AND `site` = '{}'".format(
+                sid, site))[0]['c']
+
     def hit(self, tid):
         self.exec("INSERT INTO `historys` (`tid`) VALUES('{}')".format(tid))
 

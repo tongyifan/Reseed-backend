@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 4.8.5
+-- version 4.9.0.1
 -- https://www.phpmyadmin.net/
 --
 -- 主机： localhost
--- 生成日期： 2019-06-08 16:05:09
+-- 生成日期： 2019-06-23 03:37:05
 -- 服务器版本： 10.3.15-MariaDB-log
--- PHP 版本： 7.3.5
+-- PHP 版本： 7.3.6
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 SET AUTOCOMMIT = 0;
@@ -84,6 +84,19 @@ CREATE TABLE `torrents` (
 -- --------------------------------------------------------
 
 --
+-- 表的结构 `torrent_records`
+--
+
+CREATE TABLE `torrent_records` (
+  `id` int(11) NOT NULL,
+  `tid` int(11) NOT NULL,
+  `sid` int(11) NOT NULL,
+  `site` varchar(15) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
 -- 表的结构 `users`
 --
 
@@ -127,6 +140,14 @@ ALTER TABLE `torrents`
   ADD KEY `torrents_name_index` (`name`(250));
 
 --
+-- 表的索引 `torrent_records`
+--
+ALTER TABLE `torrent_records`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `torrent_records_id_uindex` (`id`),
+  ADD UNIQUE KEY `torrent_records_sid_site_uindex` (`sid`,`site`);
+
+--
 -- 表的索引 `users`
 --
 ALTER TABLE `users`
@@ -154,6 +175,12 @@ ALTER TABLE `historys`
 -- 使用表AUTO_INCREMENT `torrents`
 --
 ALTER TABLE `torrents`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- 使用表AUTO_INCREMENT `torrent_records`
+--
+ALTER TABLE `torrent_records`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --

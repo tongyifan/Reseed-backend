@@ -58,6 +58,8 @@ def compare_torrents(name, files, sites):
 def format_sites(result, sites):
     formatted_result = list()
     for r in result.split(','):
-        if r.replace('-' + r.split('-')[-1], '') in sites:
+        sid = r.split('-')[-1]
+        site = r.replace('-' + sid, '')
+        if site in sites and db.check_torrent_valid(sid, site):
             formatted_result.append(r)
     return ','.join(formatted_result)
