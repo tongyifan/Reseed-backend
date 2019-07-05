@@ -1,17 +1,26 @@
+import base64
 import hashlib
+import hmac
 import json
+import time
 
 import requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask_redis import FlaskRedis
 import bcrypt
 
-from utils import db
-from utils.rs_token import generate_token, verify_token
-from utils.torrent_compare import search_torrent
-from env import TJUPT_SECRET, TJUPT_TOKEN
+from utils.database import Database
 
-app = Flask(__name__)
+app = Flask(__name__, instance_relative_config=True)
+app.config.from_object('config')
+app.config.from_pyfile('config.py')
+
+mysql = Database(app=app, autocommit=True)
+redis = FlaskRedis(app=app)
+
+from utils.torrent_compare import search_torrent
+
 CORS(app)
 
 
@@ -41,7 +50,7 @@ def upload_file():
 @app.route('/sites_info')
 def sites_info():
     if verify_token(request.args['token']):
-        sites = db.get_sites_info()
+        sites = mysql.get_sites_info()
         result = list()
         for site in sites:
             result.append({'name': site['site'], 'base_url': site['base_url'], '_enable': False, 'passkey': ""})
@@ -57,17 +66,17 @@ def sign_up():
 
     tjupt_id = request.form['id']
     tjupt_passkey = request.form['passkey']
-    if not db.check_tjuid_registered(tjupt_id):
+    if not mysql.check_tjuid_registered(tjupt_id):
         return jsonify({'success': False, 'msg': 'This ID has been used.'}), 403
     msg = check_id_passkey(tjupt_id, tjupt_passkey)
     if msg:
         return jsonify({'success': False, 'msg': msg}), 403
 
-    if not db.get_user(username):
+    if not mysql.get_user(username):
         salt = bcrypt.gensalt()
         passhash = bcrypt.hashpw(password.encode('utf-8'), salt)
 
-        db.signup(username, passhash.decode('utf-8'), tjupt_id)
+        mysql.signup(username, passhash.decode('utf-8'), tjupt_id)
         return jsonify({'success': True, 'msg': 'Registration success!'}), 201
     else:
         return jsonify({'success': False, 'msg': 'Username existed!'}), 403
@@ -78,7 +87,7 @@ def log_in():
     username = request.form['username']
     password = request.form['password']
 
-    user = db.get_user(username)
+    user = mysql.get_user(username)
     if user:
         if bcrypt.checkpw(password.encode('utf-8'), user[0]['passhash'].encode('utf-8')):
             token = generate_token(user[0]['username'])
@@ -91,10 +100,12 @@ def log_in():
 
 def check_id_passkey(tjupt_id, tjupt_passkey):
     api_type = 'verify_id_passkey'
-    sign = hashlib.md5((TJUPT_TOKEN + api_type + tjupt_id + tjupt_passkey + TJUPT_SECRET).encode('utf-8')).hexdigest()
+    sign = hashlib.md5(
+        (app.config.get('TJUPT_TOKEN') + api_type + tjupt_id + tjupt_passkey + app.config.get('TJUPT_SECRET')).encode(
+            'utf-8')).hexdigest()
     try:
         resp = requests.get('https://tjupt.org/api_username.php', params={
-            'token': TJUPT_TOKEN,
+            'token': app.config.get('TJUPT_TOKEN'),
             'id': tjupt_id,
             'passkey': tjupt_passkey,
             'type': api_type,
@@ -110,6 +121,39 @@ def check_id_passkey(tjupt_id, tjupt_passkey):
             return 'Network error! Please try it later...'
     except requests.RequestException:
         return 'Network error! Please try it later...'
+
+
+def generate_token(username, expire=app.config.get('TOKEN_EXPIRED_TIME')):
+    key = mysql.get_user(username)[0]['passhash']
+    ts_str = str(time.time() + expire)
+    ts_byte = ts_str.encode("utf-8")
+    sha1_tshexstr = hmac.new(key.encode("utf-8"), ts_byte, 'sha1').hexdigest()
+    token = username + ':' + ts_str + ':' + sha1_tshexstr
+    b64_token = base64.urlsafe_b64encode(token.encode("utf-8"))
+    return b64_token.decode("utf-8")
+
+
+def verify_token(token):
+    try:
+        token_str = base64.urlsafe_b64decode(token).decode('utf-8')
+        token_list = token_str.split(':')
+        if len(token_list) != 3:
+            return False
+        username = token_list[0]
+        user = mysql.get_user(username)
+        if not user:
+            return False
+        key = user[0]['passhash']
+        ts_str = token_list[1]
+        if float(ts_str) < time.time():
+            # token expired
+            return False
+        known_sha1_tsstr = token_list[2]
+        sha1 = hmac.new(key.encode("utf-8"), ts_str.encode('utf-8'), 'sha1')
+        calc_sha1_tsstr = sha1.hexdigest()
+        return calc_sha1_tsstr == known_sha1_tsstr
+    except Exception:
+        return False
 
 
 if __name__ == '__main__':

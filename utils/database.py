@@ -1,24 +1,13 @@
-from threading import Lock
-
 import pymysql
+from flaskext.mysql import MySQL
 
-from env import DB_USER, DB_PASS, DB_NAME
 
-
-class Database:
-    _commit_lock = Lock()
-
-    def __init__(self, site):
-        self.db = pymysql.connect(user=DB_USER, password=DB_PASS, db=DB_NAME,
-                                  charset='utf8mb4', autocommit=True)
-        self.site = site
-
+class Database(MySQL):
     def exec(self, sql: str, cursor: object = pymysql.cursors.DictCursor):
-        with self._commit_lock:
-            self.db.ping(reconnect=True)
-            cursor = self.db.cursor(cursor)
-            cursor.execute(sql)
-            data = cursor.fetchall()
+        db = self.get_db()
+        cursor = db.cursor(cursor)
+        cursor.execute(sql)
+        data = cursor.fetchall()
         return data
 
     def get_sites_info(self):

@@ -1,8 +1,0 @@
-DB_USER = 'root'
-DB_PASS = ''
-DB_NAME = 'reseed'
-
-TJUPT_TOKEN = ""
-TJUPT_SECRET = ""
-
-TOKEN_EXPIRED_TIME = 86400
