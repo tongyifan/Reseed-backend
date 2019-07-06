@@ -3,6 +3,7 @@
 <img src="https://img.shields.io/badge/Used-Python%20Vue-blue.svg">
 <a href="https://github.com/tongyifan/Reseed-backend/blob/master/LICENSE" title="GitHub license"><img src="https://img.shields.io/github/license/tongyifan/Reseed-backend.svg?label=License"></a>
 <a href="https://t.me/reseed_tongyifan_me"><img src="https://img.shields.io/badge/telegram-Channel-blue.svg?logo=telegram"></a>
+<a href="https://app.fossa.io/projects/git%2Bgithub.com%2Ftongyifan%2FReseed-backend?ref=badge_shield" alt="FOSSA Status"><img src="https://app.fossa.io/api/projects/git%2Bgithub.com%2Ftongyifan%2FReseed-backend.svg?type=shield"/></a>
 </p>
 
 ---
@@ -35,3 +36,7 @@ Reseed是一个十分易于使用的跨站辅种项目，目前提供了国内�
 * [TJUPT论坛](https://tjupt.org/forums.php?action=viewtopic&topicid=15466) / [站内信](https://tjupt.org/sendmessage.php?receiver=57375) / QQ群
 * 其他你能找到我的各种途径...
 
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Ftongyifan%2FReseed-backend.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Ftongyifan%2FReseed-backend?ref=badge_large)
