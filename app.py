@@ -64,19 +64,25 @@ def sign_up():
     username = request.form['username']
     password = request.form['password']
 
-    tjupt_id = request.form['id']
-    tjupt_passkey = request.form['passkey']
-    if not mysql.check_tjuid_registered(tjupt_id):
-        return jsonify({'success': False, 'msg': 'This ID has been used.'}), 403
-    msg = check_id_passkey(tjupt_id, tjupt_passkey)
+    site = request.form['site'] or 'tjupt'
+    user_id = request.form['id']
+    user_passkey = request.form['passkey']
+
+    # Check site id in our database
+    if not mysql.check_site_id_registered(site, user_id):
+        return jsonify({'success': False, 'msg': 'This ID has been used in Site: {}.'.format(site)}), 403
+
+    # check if user is valid in site
+    msg = check_id_passkey(site, user_id, user_passkey)
     if msg:
         return jsonify({'success': False, 'msg': msg}), 403
 
+    # Create user if their name is not dupe
     if not mysql.get_user(username):
         salt = bcrypt.gensalt()
         passhash = bcrypt.hashpw(password.encode('utf-8'), salt)
 
-        mysql.signup(username, passhash.decode('utf-8'), tjupt_id)
+        mysql.signup(username, passhash.decode('utf-8'), site, user_id)
         return jsonify({'success': True, 'msg': 'Registration success!'}), 201
     else:
         return jsonify({'success': False, 'msg': 'Username existed!'}), 403
@@ -98,7 +104,13 @@ def log_in():
         return jsonify({'success': False, 'msg': 'Invalid username or password!'}), 401
 
 
-def check_id_passkey(tjupt_id, tjupt_passkey):
+def check_id_passkey(site, user_id, user_passkey):
+    if site == 'ourbits':
+        return check_id_passkey_ourbits(user_id, user_passkey)
+    return check_id_passkey_tjupt(user_id, user_passkey)  # Fallback
+
+
+def check_id_passkey_tjupt(tjupt_id, tjupt_passkey):
     api_type = 'verify_id_passkey'
     sign = hashlib.md5(
         (app.config.get('TJUPT_TOKEN') + api_type + tjupt_id + tjupt_passkey + app.config.get('TJUPT_SECRET')).encode(
@@ -112,8 +124,32 @@ def check_id_passkey(tjupt_id, tjupt_passkey):
             'sign': sign
         }, timeout=30)
         if resp.status_code == 200:
-            data = json.loads(resp.text)
+            data = resp.json()
             if data['status'] == 0:
+                return ''
+            else:
+                return 'Auth failed! Please check your ID and passkey.'
+        else:
+            return 'Network error! Please try it later...'
+    except requests.RequestException:
+        return 'Network error! Please try it later...'
+
+
+# 这里调用了Reseed专用接口，具体请与 @Rhilip 联系
+def check_id_passkey_ourbits(ob_id, ob_passkey):
+    verity = hashlib.md5(
+        ('{}{}{}{}'.format(app.config.get('OURBITS_TOKEN'), ob_id, ob_passkey,
+                           app.config.get('OURBITS_SECRET'))).encode('utf-8')
+    ).hexdigest()
+    try:
+        resp = requests.get('https://www.ourbits.club/api_reseed.php', params={
+            'token': app.config.get('OURBITS_TOKEN'),
+            'id': ob_id,
+            'verity': verity
+        }, timeout=30)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data['success']:  # 接口只返回 {'success' : <Boolean>} ，验证通过就True
                 return ''
             else:
                 return 'Auth failed! Please check your ID and passkey.'
