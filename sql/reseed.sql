@@ -104,7 +104,8 @@ CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `username` varchar(255) NOT NULL,
   `passhash` varchar(100) NOT NULL,
-  `tjupt_id` int(11) NOT NULL DEFAULT 0
+  `tjupt_id` int(11) NOT NULL DEFAULT 0,
+  `ourbits_id` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
