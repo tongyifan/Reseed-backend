@@ -1,5 +1,6 @@
 import json
-from app import mysql, redis
+
+import app
 
 
 def search_torrent(dir_tree, sites):
@@ -10,10 +11,10 @@ def search_torrent(dir_tree, sites):
 
 
 def compare_torrents(name, files, sites):
-    torrents = redis.get(name)
+    torrents = app.redis.get(name)
     if not torrents:
-        torrents = mysql.select_torrent(name)
-        redis.set(name, json.dumps(torrents))
+        torrents = app.mysql.select_torrent(name)
+        app.redis.set(name, json.dumps(torrents))
     else:
         torrents = json.loads(str(torrents, encoding='utf-8'))
 
@@ -40,16 +41,16 @@ def compare_torrents(name, files, sites):
                     failure_count += 1
             if failure_count:
                 if success_count > failure_count:
-                    mysql.hit(t['id'])
+                    app.mysql.hit(t['id'])
                     cmp_warning.append({'id': t['id'], 'sites': result_site})
             else:
-                mysql.hit(t['id'])
+                app.mysql.hit(t['id'])
                 cmp_success.append({'id': t['id'], 'sites': result_site})
         else:
             if type(files) is not int:
                 continue
             if t['length'] * 0.95 < files < t['length'] * 1.05:
-                mysql.hit(t['id'])
+                app.mysql.hit(t['id'])
                 cmp_success.append({'id': t['id'], 'sites': result_site})
     return {'name': name, 'cmp_success': cmp_success, 'cmp_warning': cmp_warning}
 
@@ -59,6 +60,6 @@ def format_sites(result, sites):
     for r in result.split(','):
         sid = r.split('-')[-1]
         site = r.replace('-' + sid, '')
-        if site in sites and mysql.check_torrent_valid(sid, site):
+        if site in sites and app.mysql.check_torrent_valid(sid, site):
             formatted_result.append(r)
     return ','.join(formatted_result)

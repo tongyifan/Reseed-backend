@@ -19,7 +19,7 @@ app.config.from_pyfile('config.py')
 mysql = Database(app=app, autocommit=True)
 redis = FlaskRedis(app=app)
 
-from utils.torrent_compare import search_torrent
+import utils
 
 CORS(app)
 
@@ -41,7 +41,7 @@ def upload_file():
             t_json = json.loads((file.read().decode('utf-8')))
         except json.decoder.JSONDecodeError:
             return jsonify({'success': False, 'msg': "Format JSON error!"}), 500
-        result = search_torrent(t_json['result'], sites)
+        result = utils.search_torrent(t_json['result'], sites)
         return jsonify({'success': True, 'base_dir': t_json['base_dir'], 'result': result})
     else:
         return jsonify({'success': True, 'msg': 'Invalid token!'}), 401
@@ -64,7 +64,7 @@ def sign_up():
     username = request.form['username']
     password = request.form['password']
 
-    site = request.form['site'] or 'tjupt'
+    site = request.form.get('site', 'tjupt')
     user_id = request.form['id']
     user_passkey = request.form['passkey']
 
