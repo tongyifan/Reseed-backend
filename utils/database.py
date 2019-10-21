@@ -14,14 +14,14 @@ class Database(MySQL):
         return self.exec("SELECT `site`, `base_url` FROM `sites` WHERE `show` = 1")
 
     def select_torrent(self, name):
-        return self.exec("SELECT * FROM `torrents` WHERE `name` = %s", (str(name),))
+        return self.exec("SELECT `id`, `name`, `files`, `length`, `sites_existed` FROM `torrents` WHERE `name` = %s", (str(name),))
 
     def check_torrent_valid(self, sid, site):
         return self.exec("SELECT COUNT(*) AS c FROM `torrent_records` WHERE `sid` = %s AND `site` = %s",
                          (sid, site))[0]['c']
 
-    def hit(self, tid):
-        self.exec("INSERT INTO `historys` (`tid`) VALUES(%s)", (tid,))
+    def record_upload_data(self, uid, data):
+        self.exec("INSERT INTO `historys` (`uid`, `data`) VALUES(%s, %s)", (uid, data))
 
     def signup(self, username, passhash, site, user_id):
         col = 'tjupt_id'

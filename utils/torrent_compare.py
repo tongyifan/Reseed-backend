@@ -41,16 +41,13 @@ def compare_torrents(name, files, sites):
                     failure_count += 1
             if failure_count:
                 if success_count > failure_count:
-                    app.mysql.hit(t['id'])
                     cmp_warning.append({'id': t['id'], 'sites': result_site})
             else:
-                app.mysql.hit(t['id'])
                 cmp_success.append({'id': t['id'], 'sites': result_site})
         else:
             if type(files) is not int:
                 continue
             if t['length'] * 0.95 < files < t['length'] * 1.05:
-                app.mysql.hit(t['id'])
                 cmp_success.append({'id': t['id'], 'sites': result_site})
     return {'name': name, 'cmp_success': cmp_success, 'cmp_warning': cmp_warning}
 

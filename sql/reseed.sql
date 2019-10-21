@@ -2,9 +2,9 @@
 -- version 4.9.0.1
 -- https://www.phpmyadmin.net/
 --
--- 主机： localhost
--- 生成日期： 2019-06-23 03:37:05
--- 服务器版本： 10.3.15-MariaDB-log
+-- 主机： 127.0.0.1
+-- 生成日期： 2019-10-21 21:38:09
+-- 服务器版本： 8.0.16
 -- PHP 版本： 7.3.6
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -33,7 +33,7 @@ CREATE TABLE `error_torrents` (
   `tid` int(11) NOT NULL,
   `site` varchar(20) NOT NULL,
   `reason` varchar(100) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -43,9 +43,10 @@ CREATE TABLE `error_torrents` (
 
 CREATE TABLE `historys` (
   `id` int(11) NOT NULL,
-  `tid` int(11) NOT NULL,
-  `time` datetime NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `uid` int(11) NOT NULL,
+  `data` json NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -59,13 +60,13 @@ CREATE TABLE `sites` (
   `download_page` varchar(50) NOT NULL DEFAULT 'download.php?id={}',
   `rss_page` varchar(255) DEFAULT 'torrentrss.php?rows=50&passkey={}&linktype=dl',
   `torrents_page` varchar(50) NOT NULL DEFAULT 'torrents.php?incldead=0&page={}',
-  `enabled` tinyint(1) NOT NULL DEFAULT 1,
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `enabled` tinyint(1) NOT NULL DEFAULT '1',
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `passkey` varchar(32) NOT NULL,
   `cookies` mediumtext NOT NULL,
-  `skip_page` int(11) NOT NULL DEFAULT 0,
-  `show` tinyint(1) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `skip_page` int(11) NOT NULL DEFAULT '0',
+  `show` tinyint(1) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -76,10 +77,11 @@ CREATE TABLE `sites` (
 CREATE TABLE `torrents` (
   `id` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `files` longtext DEFAULT NULL,
+  `files` longtext,
   `length` bigint(20) NOT NULL,
-  `sites_existed` varchar(255) NOT NULL
-) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4;
+  `sites_existed` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
+  `added_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -91,8 +93,9 @@ CREATE TABLE `torrent_records` (
   `id` int(11) NOT NULL,
   `tid` int(11) NOT NULL,
   `sid` int(11) NOT NULL,
-  `site` varchar(15) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `site` varchar(15) NOT NULL,
+  `added_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -104,9 +107,10 @@ CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `username` varchar(255) NOT NULL,
   `passhash` varchar(100) NOT NULL,
-  `tjupt_id` int(11) NOT NULL DEFAULT 0,
-  `ourbits_id` int(11) NOT NULL DEFAULT 0
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `added_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `tjupt_id` int(11) NOT NULL DEFAULT '0',
+  `ourbits_id` int(11) NOT NULL DEFAULT '0'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- 转储表的索引
@@ -146,7 +150,8 @@ ALTER TABLE `torrents`
 ALTER TABLE `torrent_records`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `torrent_records_id_uindex` (`id`),
-  ADD UNIQUE KEY `torrent_records_sid_site_uindex` (`sid`,`site`);
+  ADD UNIQUE KEY `torrent_records_sid_site_uindex` (`sid`,`site`),
+  ADD KEY `tid` (`tid`);
 
 --
 -- 表的索引 `users`

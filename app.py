@@ -33,12 +33,14 @@ def hello_world():
 
 @app.route('/upload_json', methods=['POST'])
 def upload_file():
-    if verify_token(request.args['token']):
+    uid = verify_token(request.args['token'])
+    if uid:
         file = request.files['file']
         sites = request.form['sites']
         sites = sites.split(',')
         try:
             t_json = json.loads((file.read().decode('utf-8')))
+            mysql.record_upload_data(uid, json.dumps(t_json))
         except json.decoder.JSONDecodeError:
             return jsonify({'success': False, 'msg': "Format JSON error!"}), 500
         result = utils.search_torrent(t_json['result'], sites)
@@ -49,7 +51,8 @@ def upload_file():
 
 @app.route('/sites_info')
 def sites_info():
-    if verify_token(request.args['token']):
+    uid = verify_token(request.args['token'])
+    if uid:
         sites = mysql.get_sites_info()
         result = list()
         for site in sites:
@@ -187,7 +190,7 @@ def verify_token(token):
         known_sha1_tsstr = token_list[2]
         sha1 = hmac.new(key.encode("utf-8"), ts_str.encode('utf-8'), 'sha1')
         calc_sha1_tsstr = sha1.hexdigest()
-        return calc_sha1_tsstr == known_sha1_tsstr
+        return user[0]['id'] if calc_sha1_tsstr == known_sha1_tsstr else 0
     except Exception:
         return False
 
