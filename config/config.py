@@ -9,6 +9,10 @@ MYSQL_USE_UNICODE = True
 
 # Redis
 REDIS_URL = "redis://localhost:6379/1"
+REDIS_TTL = 2 * 24 * 60 * 60  # 2 days
+
+# Reseed
+TOKEN_EXPIRED_TIME = 86400
 
 # Site
 TJUPT_TOKEN = ""
@@ -16,5 +20,3 @@ TJUPT_SECRET = ""
 
 OURBITS_TOKEN = ""
 OURBITS_SECRET = ""
-
-TOKEN_EXPIRED_TIME = 86400

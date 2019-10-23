@@ -18,6 +18,7 @@ app.config.from_pyfile('config.py')
 
 mysql = Database(app=app, autocommit=True)
 redis = FlaskRedis(app=app)
+REDIS_TTL = app.config.get('REDIS_TTL', 2 * 24 * 60 * 60)
 
 import utils
 
@@ -98,19 +99,50 @@ def log_in():
 
     user = mysql.get_user(username)
     if user:
-        if bcrypt.checkpw(password.encode('utf-8'), user[0]['passhash'].encode('utf-8')):
-            token = generate_token(user[0]['username'])
+        if not user['enable']:
+            return jsonify({'success': False, 'msg': 'User has been banned! Please contact administrator.'}), 403
+
+        # 如果用户的TJUPT账户被封禁，则将Reseed账户同时封禁
+        if user['tjupt_id']:
+            user_active = check_id_tjupt(user['tjupt_id'])
+            if not user_active:
+                mysql.ban_user(user['id'])
+                return jsonify({'success': False, 'msg': 'User has been banned! Please contact administrator.'}), 403
+
+        if bcrypt.checkpw(password.encode('utf-8'), user['passhash'].encode('utf-8')):
+            token = generate_token(user['username'])
             return jsonify({'success': True, 'msg': 'Success~', 'token': token})
         else:
-            return jsonify({'success': False, 'msg': 'Invalid username or password!'}), 401
+            return jsonify({'success': False, 'msg': 'Invalid username or password!'}), 403
     else:
-        return jsonify({'success': False, 'msg': 'Invalid username or password!'}), 401
+        return jsonify({'success': False, 'msg': 'Invalid username or password!'}), 403
 
 
 def check_id_passkey(site, user_id, user_passkey):
     if site == 'ourbits':
         return check_id_passkey_ourbits(user_id, user_passkey)
     return check_id_passkey_tjupt(user_id, user_passkey)  # Fallback
+
+
+def check_id_tjupt(tjupt_id):
+    api_type = 'verify_id_status'
+    sign = hashlib.md5(
+        (app.config.get('TJUPT_TOKEN') + api_type + str(tjupt_id) + app.config.get('TJUPT_SECRET')).encode(
+            'utf-8')).hexdigest()
+    try:
+        resp = requests.get('https://tjupt.org/api_username.php', params={
+            'token': app.config.get('TJUPT_TOKEN'),
+            'id': tjupt_id,
+            'type': api_type,
+            'sign': sign
+        }, timeout=30)
+        if resp.status_code == 200:
+            data = resp.json()
+            return True if data['status'] == 0 else False
+        else:
+            return True
+    except requests.RequestException:
+        return True
 
 
 def check_id_passkey_tjupt(tjupt_id, tjupt_passkey):
@@ -163,7 +195,7 @@ def check_id_passkey_ourbits(ob_id, ob_passkey):
 
 
 def generate_token(username, expire=app.config.get('TOKEN_EXPIRED_TIME')):
-    key = mysql.get_user(username)[0]['passhash']
+    key = mysql.get_user(username)['passhash']
     ts_str = str(time.time() + expire)
     ts_byte = ts_str.encode("utf-8")
     sha1_tshexstr = hmac.new(key.encode("utf-8"), ts_byte, 'sha1').hexdigest()
@@ -180,9 +212,9 @@ def verify_token(token):
             return False
         username = token_list[0]
         user = mysql.get_user(username)
-        if not user:
+        if not user or not user['enable']:
             return False
-        key = user[0]['passhash']
+        key = user['passhash']
         ts_str = token_list[1]
         if float(ts_str) < time.time():
             # token expired
@@ -190,7 +222,7 @@ def verify_token(token):
         known_sha1_tsstr = token_list[2]
         sha1 = hmac.new(key.encode("utf-8"), ts_str.encode('utf-8'), 'sha1')
         calc_sha1_tsstr = sha1.hexdigest()
-        return user[0]['id'] if calc_sha1_tsstr == known_sha1_tsstr else 0
+        return user['id'] if calc_sha1_tsstr == known_sha1_tsstr else 0
     except Exception:
         return False
 

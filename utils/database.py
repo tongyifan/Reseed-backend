@@ -14,7 +14,8 @@ class Database(MySQL):
         return self.exec("SELECT `site`, `base_url` FROM `sites` WHERE `show` = 1")
 
     def select_torrent(self, name):
-        return self.exec("SELECT `id`, `name`, `files`, `length`, `sites_existed` FROM `torrents` WHERE `name` = %s", (str(name),))
+        return self.exec("SELECT `id`, `name`, `files`, `length`, `sites_existed` FROM `torrents` WHERE `name` = %s",
+                         (str(name),))
 
     def check_torrent_valid(self, sid, site):
         return self.exec("SELECT COUNT(*) AS c FROM `torrent_records` WHERE `sid` = %s AND `site` = %s",
@@ -32,7 +33,8 @@ class Database(MySQL):
                   (str(username), passhash, str(user_id)))
 
     def get_user(self, username):
-        return self.exec("SELECT * FROM `users` WHERE `username` = %s", (str(username),))
+        user = self.exec("SELECT * FROM `users` WHERE `username` = %s LIMIT 1", (str(username),))
+        return user[0] if user else None
 
     def check_site_id_registered(self, site, user_id):
         if site == 'ourbits':
@@ -44,3 +46,6 @@ class Database(MySQL):
 
     def check_tjuid_registered(self, user_id):
         return self.exec("SELECT COUNT(*) as `a` FROM `users` WHERE `tjupt_id` = %s", (str(user_id),))[0]['a'] == 0
+
+    def ban_user(self, uid):
+        self.exec("UPDATE `users` SET enable = 0 WHERE `id` = %s", uid)
