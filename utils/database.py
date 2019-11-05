@@ -21,8 +21,16 @@ class Database(MySQL):
         return self.exec("SELECT COUNT(*) AS c FROM `torrent_records` WHERE `sid` = %s AND `site` = %s",
                          (sid, site))[0]['c']
 
-    def record_upload_data(self, uid, data):
-        self.exec("INSERT INTO `historys` (`uid`, `data`) VALUES(%s, %s)", (uid, data))
+    def record_upload_data(self, uid, hash, result, ip):
+        self.exec("INSERT INTO `historys` (`uid`, `hash`, `result`, `ip`) VALUES(%s, %s, %s, %s)",
+                  (uid, hash, result, ip))
+
+    def get_result_cache(self, hash):
+        cache = self.exec(
+            '''SELECT `result` FROM `historys` 
+            WHERE `hash` = %s AND TIMESTAMPDIFF(HOUR, `time`, NOW()) < 12 
+            ORDER BY `time` DESC''', (hash,))
+        return cache[0]['result'] if cache else None
 
     def signup(self, username, passhash, site, user_id):
         col = 'tjupt_id'
@@ -32,8 +40,13 @@ class Database(MySQL):
         self.exec("INSERT INTO `users` (`username`, `passhash`, `{}`) VALUES (%s, %s, %s)".format(col),
                   (str(username), passhash, str(user_id)))
 
-    def get_user(self, username):
-        user = self.exec("SELECT * FROM `users` WHERE `username` = %s LIMIT 1", (str(username),))
+    def get_user(self, username='', uid=0):
+        if username:
+            user = self.exec("SELECT * FROM `users` WHERE `username` = %s LIMIT 1", (str(username),))
+        elif uid:
+            user = self.exec("SELECT * FROM `users` WHERE `id` = %s LIMIT 1", (str(uid),))
+        else:
+            user = None
         return user[0] if user else None
 
     def check_site_id_registered(self, site, user_id):

@@ -11,8 +11,10 @@ MYSQL_USE_UNICODE = True
 REDIS_URL = "redis://localhost:6379/1"
 REDIS_TTL = 2 * 24 * 60 * 60  # 2 days
 
-# Reseed
-TOKEN_EXPIRED_TIME = 86400
+# Flask
+SECRET_KEY = b''
+REMEMBER_COOKIE_NAME = 'reseed'
+REMEMBER_COOKIE_DURATION = 86400
 
 # Site
 TJUPT_TOKEN = ""

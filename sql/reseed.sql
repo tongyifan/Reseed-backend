@@ -45,7 +45,9 @@ CREATE TABLE `historys` (
   `id` int(11) NOT NULL,
   `time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `uid` int(11) NOT NULL,
-  `data` json NOT NULL
+  `hash` char(32) NOT NULL,
+  `result` json NOT NULL,
+  `ip` varchar(40) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------

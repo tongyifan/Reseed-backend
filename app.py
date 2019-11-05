@@ -7,9 +7,12 @@ import time
 import requests
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_login import LoginManager, login_required, current_user
 from flask_redis import FlaskRedis
 import bcrypt
 
+from model.user import User
 from utils.database import Database
 
 app = Flask(__name__, instance_relative_config=True)
@@ -24,6 +27,43 @@ import utils
 
 CORS(app)
 
+limiter = Limiter(app)
+
+login_manager = LoginManager(app)
+
+
+@login_manager.request_loader
+def load_user_from_request(request):
+    token = request.headers.get('Authorization')
+    if token:
+        token = token.replace('Bearar ', '', 1)
+        return verify_token(token)
+    else:
+        return None
+
+
+def verify_token(token):
+    try:
+        token_str = base64.urlsafe_b64decode(token).decode('utf-8')
+        token_list = token_str.split(':')
+        if len(token_list) != 3:
+            return False
+        username = token_list[0]
+        user = mysql.get_user(username)
+        if not user or not user['enable']:
+            return False
+        key = user['passhash']
+        ts_str = token_list[1]
+        if float(ts_str) < time.time():
+            # token expired
+            return False
+        known_sha1_tsstr = token_list[2]
+        sha1 = hmac.new(key.encode("utf-8"), ts_str.encode('utf-8'), 'sha1')
+        calc_sha1_tsstr = sha1.hexdigest()
+        return User(user) if calc_sha1_tsstr == known_sha1_tsstr else None
+    except Exception:
+        return None
+
 
 @app.route('/')
 def hello_world():
@@ -32,35 +72,38 @@ def hello_world():
            '<a href="https://t.me/tongyifan">@tongyifan</a>'
 
 
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return jsonify({'success': False, 'msg': "Rate limit exceeded: %s" % e.description}), 429
+
+
 @app.route('/upload_json', methods=['POST'])
+@login_required
+@limiter.limit('10/day;5/hour', key_func=lambda: current_user.id)
 def upload_file():
-    uid = verify_token(request.args['token'])
-    if uid:
-        file = request.files['file']
-        sites = request.form['sites']
-        sites = sites.split(',')
-        try:
-            t_json = json.loads((file.read().decode('utf-8')))
-            mysql.record_upload_data(uid, json.dumps(t_json))
-        except json.decoder.JSONDecodeError:
-            return jsonify({'success': False, 'msg': "Format JSON error!"}), 500
-        result = utils.search_torrent(t_json['result'], sites)
-        return jsonify({'success': True, 'base_dir': t_json['base_dir'], 'result': result})
-    else:
-        return jsonify({'success': True, 'msg': 'Invalid token!'}), 401
+    file = request.files['file']
+    sites = request.form['sites']
+    sites = sites.split(',')
+    try:
+        t_json = json.loads((file.read().decode('utf-8')))
+    except json.decoder.JSONDecodeError:
+        return jsonify({'success': False, 'msg': "Format JSON error!"}), 500
+    file_hash = hashlib.md5(json.dumps(t_json).encode('utf-8')).hexdigest()
+    cache = mysql.get_result_cache(file_hash)
+    result = json.loads(cache) if cache is not None else utils.search_torrent(t_json['result'], sites)
+    # 记录日志
+    mysql.record_upload_data(current_user.id, file_hash, json.dumps(result), request.remote_addr)
+    return jsonify({'success': True, 'base_dir': t_json['base_dir'], 'result': result})
 
 
 @app.route('/sites_info')
+@login_required
 def sites_info():
-    uid = verify_token(request.args['token'])
-    if uid:
-        sites = mysql.get_sites_info()
-        result = list()
-        for site in sites:
-            result.append({'name': site['site'], 'base_url': site['base_url'], '_enable': False, 'passkey': ""})
-        return jsonify(result)
-    else:
-        return jsonify({'success': False, 'msg': 'Invalid token!'}), 401
+    sites = mysql.get_sites_info()
+    result = list()
+    for site in sites:
+        result.append({'name': site['site'], 'base_url': site['base_url'], '_enable': False, 'passkey': ""})
+    return jsonify(result)
 
 
 @app.route('/signup', methods=['POST'])
@@ -110,8 +153,7 @@ def log_in():
                 return jsonify({'success': False, 'msg': 'User has been banned! Please contact administrator.'}), 403
 
         if bcrypt.checkpw(password.encode('utf-8'), user['passhash'].encode('utf-8')):
-            token = generate_token(user['username'])
-            return jsonify({'success': True, 'msg': 'Success~', 'token': token})
+            return jsonify({'success': True, 'msg': 'Success~', 'token': User(user).get_auth_token()})
         else:
             return jsonify({'success': False, 'msg': 'Invalid username or password!'}), 403
     else:
@@ -192,39 +234,6 @@ def check_id_passkey_ourbits(ob_id, ob_passkey):
             return 'Network error! Please try it later...'
     except requests.RequestException:
         return 'Network error! Please try it later...'
-
-
-def generate_token(username, expire=app.config.get('TOKEN_EXPIRED_TIME')):
-    key = mysql.get_user(username)['passhash']
-    ts_str = str(time.time() + expire)
-    ts_byte = ts_str.encode("utf-8")
-    sha1_tshexstr = hmac.new(key.encode("utf-8"), ts_byte, 'sha1').hexdigest()
-    token = username + ':' + ts_str + ':' + sha1_tshexstr
-    b64_token = base64.urlsafe_b64encode(token.encode("utf-8"))
-    return b64_token.decode("utf-8")
-
-
-def verify_token(token):
-    try:
-        token_str = base64.urlsafe_b64decode(token).decode('utf-8')
-        token_list = token_str.split(':')
-        if len(token_list) != 3:
-            return False
-        username = token_list[0]
-        user = mysql.get_user(username)
-        if not user or not user['enable']:
-            return False
-        key = user['passhash']
-        ts_str = token_list[1]
-        if float(ts_str) < time.time():
-            # token expired
-            return False
-        known_sha1_tsstr = token_list[2]
-        sha1 = hmac.new(key.encode("utf-8"), ts_str.encode('utf-8'), 'sha1')
-        calc_sha1_tsstr = sha1.hexdigest()
-        return user['id'] if calc_sha1_tsstr == known_sha1_tsstr else 0
-    except Exception:
-        return False
 
 
 if __name__ == '__main__':
