@@ -90,9 +90,11 @@ def upload_file():
         return jsonify({'success': False, 'msg': "Format JSON error!"}), 500
     file_hash = hashlib.md5(json.dumps(t_json).encode('utf-8')).hexdigest()
     cache = mysql.get_result_cache(file_hash)
-    result = json.loads(cache) if cache is not None else utils.search_torrent(t_json['result'], sites)
-    # 记录日志
-    mysql.record_upload_data(current_user.id, file_hash, json.dumps(result), request.remote_addr)
+    if cache is not None:
+        result = json.loads(cache)
+    else:
+        result = utils.search_torrent(t_json['result'], sites)
+        mysql.record_upload_data(current_user.id, file_hash, json.dumps(result), request.remote_addr)
     return jsonify({'success': True, 'base_dir': t_json['base_dir'], 'result': result})
 
 
