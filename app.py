@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import json
 import time
+from itertools import chain
 
 import requests
 from flask import Flask, jsonify, request
@@ -88,14 +89,28 @@ def upload_file():
         t_json = json.loads((file.read().decode('utf-8')))
     except json.decoder.JSONDecodeError:
         return jsonify({'success': False, 'msg': "Format JSON error!"}), 500
-    file_hash = hashlib.md5(json.dumps(t_json).encode('utf-8')).hexdigest()
+    file_hash = hashlib.md5(json.dumps(t_json['result']).encode('utf-8')).hexdigest()
     cache = mysql.get_result_cache(file_hash)
     if cache is not None:
         result = json.loads(cache)
     else:
         result = utils.search_torrent(t_json['result'], sites)
         mysql.record_upload_data(current_user.id, file_hash, json.dumps(result), request.remote_addr)
+
+    for torrent in result:
+        for t in chain(torrent['cmp_warning'], torrent['cmp_success']):
+            t['sites'] = format_sites(t['sites'], sites)
     return jsonify({'success': True, 'base_dir': t_json['base_dir'], 'result': result})
+
+
+def format_sites(result, sites):
+    formatted_result = list()
+    for r in result.split(','):
+        sid = r.split('-')[-1]
+        site = r.replace('-' + sid, '')
+        if site in sites and mysql.check_torrent_valid(sid, site):
+            formatted_result.append(r)
+    return ','.join(formatted_result)
 
 
 @app.route('/sites_info')
