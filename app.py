@@ -100,6 +100,8 @@ def upload_file():
     for torrent in result:
         for t in chain(torrent['cmp_warning'], torrent['cmp_success']):
             t['sites'] = format_sites(t['sites'], sites)
+        torrent['cmp_success'] = list(filter(lambda k: k['sites'] != '', torrent['cmp_success']))
+        torrent['cmp_warning'] = list(filter(lambda k: k['sites'] != '', torrent['cmp_warning']))
     return jsonify({'success': True, 'base_dir': t_json['base_dir'], 'result': result})
 
 
