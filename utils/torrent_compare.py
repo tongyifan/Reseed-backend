@@ -14,8 +14,7 @@ def compare_torrents(name, files, sites):
     torrents = app.redis.get(name)
     if not torrents:
         torrents = app.mysql.select_torrent(name)
-        app.redis.set(name, json.dumps(torrents))
-        app.redis.expire(name, app.REDIS_TTL)
+        app.redis.set(name, json.dumps(torrents), app.REDIS_TTL)
     else:
         torrents = json.loads(str(torrents, encoding='utf-8'))
 

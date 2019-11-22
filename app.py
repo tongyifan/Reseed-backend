@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import json
 import time
+import uuid
 from itertools import chain
 
 import requests
@@ -182,7 +183,12 @@ def log_in():
 def check_id_passkey(site, user_id, user_passkey):
     if site == 'ourbits':
         return check_id_passkey_ourbits(user_id, user_passkey)
-    return check_id_passkey_tjupt(user_id, user_passkey)  # Fallback
+    elif site == 'hdchina':
+        return check_id_passkey_hdchina(user_id, user_passkey)
+    elif site == 'tjupt':
+        return check_id_passkey_tjupt(user_id, user_passkey)
+    else:
+        return 'Auth failed! Unknown site.'
 
 
 def check_id_tjupt(tjupt_id):
@@ -253,6 +259,62 @@ def check_id_passkey_ourbits(ob_id, ob_passkey):
             return 'Network error! Please try it later...'
     except requests.RequestException:
         return 'Network error! Please try it later...'
+
+
+def check_id_passkey_hdchina(hdchina_username, hdchina_userkey):
+    try:
+        resp = requests.post('https://api.hdchina.org/v1/3rd/reseed/checkUserToken', data={
+            'userKey': hdchina_userkey
+        }, headers={'Authorization': "Bearer {}".format(app.config.get('HDCHINA_APIKEY'))}, timeout=30)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data['status'] == 'success':
+                if str.lower(hdchina_username) == str.lower(data['data']['username']):
+                    return ''
+                return 'Auth failed! Username mismatch, please contact administrator.'
+            else:
+                return 'Auth failed! Please check your ID and passkey.'
+        else:
+            return 'Network error! Please try it later...'
+    except requests.RequestException:
+        return 'Network error! Please try it later...'
+
+
+@app.route('/hdchina_token')
+@login_required
+def get_hdchina_token():
+    token = redis.get('_hdchina_token')
+    if token:
+        return jsonify({'success': True, 'token': str(token, encoding='utf-8')})
+    else:
+        result = refresh_hdchina_token().json()
+        if result['success']:
+            token = redis.get('_hdchina_token')
+            return jsonify({'success': True, 'token': str(token, encoding='utf-8')})
+        else:
+            return jsonify(result), 500
+
+
+@app.route('/refresh_hdchina_token')
+def refresh_hdchina_token():
+    token = redis.get('_hdchina_token')
+    if token:
+        return jsonify({'success': True})
+    try:
+        resp = requests.get('https://api.hdchina.org/v1/3rd/reseed/requestToken',
+                            headers={'Authorization': "Bearer {}".format(app.config.get('HDCHINA_APIKEY'))}, timeout=30)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data['status'] == 'success':
+                token = data['data']['token']
+                redis.set('_hdchina_token', token, int(data['data']['expire']) - int(time.time()) - 10)
+                return jsonify({'success': True})
+            else:
+                return jsonify({'success': False, 'msg': 'Reseed auth failed! Please report to @tongyifan'})
+        else:
+            return jsonify({'success': False, 'msg': 'Network error! Please try it later...'})
+    except requests.RequestException:
+        return jsonify({'success': False, 'msg': 'Network error! Please try it later...'})
 
 
 if __name__ == '__main__':
