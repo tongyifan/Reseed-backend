@@ -14,7 +14,7 @@ class Database(MySQL):
         return self.exec("SELECT `site`, `base_url` FROM `sites` WHERE `show` = 1")
 
     def select_torrent(self, name):
-        return self.exec("SELECT `id`, `name`, `files`, `length`, `sites_existed` FROM `torrents` WHERE `name` = %s",
+        return self.exec("SELECT `id`, `name`, `files`, `length` FROM `torrents` WHERE `name` = %s",
                          (str(name),))
 
     def check_torrent_valid(self, sid, site):
@@ -26,10 +26,7 @@ class Database(MySQL):
                   (uid, hash, result, ip))
 
     def get_result_cache(self, hash):
-        cache = self.exec(
-            '''SELECT `result` FROM `historys` 
-            WHERE `hash` = %s AND TIMESTAMPDIFF(HOUR, `time`, NOW()) < 12 
-            ORDER BY `time` DESC''', (hash,))
+        cache = self.exec("SELECT `result` FROM `historys` WHERE `hash` = %s ORDER BY `time` DESC", (hash,))
         return cache[0]['result'] if cache else None
 
     def signup(self, username, passhash, site, user_id):
@@ -62,3 +59,6 @@ class Database(MySQL):
 
     def ban_user(self, uid):
         self.exec("UPDATE `users` SET enable = 0 WHERE `id` = %s", uid)
+
+    def find_torrents_by_id(self, tid):
+        return self.exec("SELECT site, sid FROM torrent_records WHERE tid = %s", (tid,))

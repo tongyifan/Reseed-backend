@@ -3,18 +3,17 @@ import json
 import app
 
 
-def search_torrent(dir_tree, sites):
+def search_torrent(dir_tree):
     matched_torrents = []
     for name, files in dir_tree.items():
-        matched_torrents.append(compare_torrents(name, files, sites))
+        matched_torrents.append(compare_torrents(name, files))
     return matched_torrents
 
 
-def compare_torrents(name, files, sites):
+def compare_torrents(name, files):
     torrents = app.redis.get(name)
     if not torrents:
         torrents = app.mysql.select_torrent(name)
-        app.redis.set(name, json.dumps(torrents), app.REDIS_TTL)
     else:
         torrents = json.loads(str(torrents, encoding='utf-8'))
 
@@ -39,12 +38,12 @@ def compare_torrents(name, files, sites):
                     failure_count += 1
             if failure_count:
                 if success_count > failure_count:
-                    cmp_warning.append({'id': t['id'], 'sites': t['sites_existed']})
+                    cmp_warning.append({'id': t['id']})
             else:
-                cmp_success.append({'id': t['id'], 'sites': t['sites_existed']})
+                cmp_success.append({'id': t['id']})
         else:
             if type(files) is not int:
                 continue
             if t['length'] * 0.95 < files < t['length'] * 1.05:
-                cmp_success.append({'id': t['id'], 'sites': t['sites_existed']})
+                cmp_success.append({'id': t['id']})
     return {'name': name, 'cmp_success': cmp_success, 'cmp_warning': cmp_warning}

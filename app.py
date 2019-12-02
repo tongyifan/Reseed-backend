@@ -95,15 +95,26 @@ def upload_file():
     if cache is not None:
         result = json.loads(cache)
     else:
-        result = utils.search_torrent(t_json['result'], sites)
+        result = utils.search_torrent(t_json['result'])
         mysql.record_upload_data(current_user.id, file_hash, json.dumps(result), request.remote_addr)
 
     for torrent in result:
         for t in chain(torrent['cmp_warning'], torrent['cmp_success']):
-            t['sites'] = format_sites(t['sites'], sites)
+            t['sites'] = find_torrents_by_id(t['sites'], sites)
         torrent['cmp_success'] = list(filter(lambda k: k['sites'] != '', torrent['cmp_success']))
         torrent['cmp_warning'] = list(filter(lambda k: k['sites'] != '', torrent['cmp_warning']))
     return jsonify({'success': True, 'base_dir': t_json['base_dir'], 'result': result})
+
+
+def find_torrents_by_id(tid, sites):
+    cache = redis.get(tid)
+    if cache:
+        result = str(cache, encoding='utf-8')
+    else:
+        result = mysql.find_torrents_by_id(tid)
+        redis.set(tid, json.dumps(result), app.config.get('REDIS_TTL', 2 * 24 * 60 * 60))
+    result = filter(lambda t: t['site'] in sites, result)
+    return ",".join(["{}-{}".format(t['site'], t['sid']) for t in result])
 
 
 def format_sites(result, sites):
