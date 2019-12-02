@@ -109,7 +109,7 @@ def upload_file():
 def find_torrents_by_id(tid, sites):
     cache = redis.get(tid)
     if cache:
-        result = str(cache, encoding='utf-8')
+        result = json.loads(str(cache, encoding='utf-8'))
     else:
         result = mysql.find_torrents_by_id(tid)
         redis.set(tid, json.dumps(result), app.config.get('REDIS_TTL', 2 * 24 * 60 * 60))
