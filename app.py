@@ -3,7 +3,6 @@ import hashlib
 import hmac
 import json
 import time
-import uuid
 from itertools import chain
 
 import requests
@@ -100,7 +99,7 @@ def upload_file():
 
     for torrent in result:
         for t in chain(torrent['cmp_warning'], torrent['cmp_success']):
-            t['sites'] = find_torrents_by_id(t['sites'], sites)
+            t['sites'] = find_torrents_by_id(t['id'], sites)
         torrent['cmp_success'] = list(filter(lambda k: k['sites'] != '', torrent['cmp_success']))
         torrent['cmp_warning'] = list(filter(lambda k: k['sites'] != '', torrent['cmp_warning']))
     return jsonify({'success': True, 'base_dir': t_json['base_dir'], 'result': result})
@@ -115,16 +114,6 @@ def find_torrents_by_id(tid, sites):
         redis.set(tid, json.dumps(result), app.config.get('REDIS_TTL', 2 * 24 * 60 * 60))
     result = filter(lambda t: t['site'] in sites, result)
     return ",".join(["{}-{}".format(t['site'], t['sid']) for t in result])
-
-
-def format_sites(result, sites):
-    formatted_result = list()
-    for r in result.split(','):
-        sid = r.split('-')[-1]
-        site = r.replace('-' + sid, '')
-        if site in sites and mysql.check_torrent_valid(sid, site):
-            formatted_result.append(r)
-    return ','.join(formatted_result)
 
 
 @app.route('/sites_info')
