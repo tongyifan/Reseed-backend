@@ -26,7 +26,8 @@ class Database(MySQL):
                   (uid, hash, result, ip))
 
     def get_result_cache(self, hash):
-        cache = self.exec("SELECT `result` FROM `historys` WHERE `hash` = %s ORDER BY `time` DESC", (hash,))
+        cache = self.exec('''SELECT `result` FROM `historys` WHERE `hash` = %s 
+                                AND TIMESTAMPDIFF(HOUR, `time`, NOW()) < 24 ORDER BY `time` DESC''', (hash,))
         return cache[0]['result'] if cache else None
 
     def signup(self, username, passhash, site, user_id):
