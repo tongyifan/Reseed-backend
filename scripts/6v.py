@@ -23,11 +23,7 @@ def parse_cookies(cookies_raw: str) -> dict:
     :param cookies_raw: k=v;形式的cookies
     :return: {k:v}形式的cookies
     """
-    simple_cookie = SimpleCookie(cookies_raw)
-    cookies = {}
-    for key, morsel in simple_cookie.items():
-        cookies[key] = morsel.value
-    return cookies
+    return {key: morsel.value for key, morsel in SimpleCookie(cookies_raw).items()}
 
 
 def download_torrent(sid):
