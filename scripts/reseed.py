@@ -23,7 +23,7 @@ def walk_dir(root_path):
                     apath = os.sep.join([root, filename])  # 合并成一个完整路径
                     try:
                         alength = os.path.getsize(apath)
-                    except FileNotFoundError:
+                    except (FileNotFoundError, OSError):
                         print("文件[{}]存在但读取时出现错误，本次索引可能不完整，请检查此文件详情后重试~".format(apath))
                         continue
                     per_torrent[apath.replace(path + os.sep, '')] = alength

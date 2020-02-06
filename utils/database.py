@@ -26,8 +26,9 @@ class Database(MySQL):
                   (uid, hash, result, ip))
 
     def get_result_cache(self, hash):
-        cache = self.exec('''SELECT `result` FROM `historys` WHERE `hash` = %s 
-                                AND TIMESTAMPDIFF(HOUR, `time`, NOW()) < 24 ORDER BY `time` DESC''', (hash,))
+        cache = self.exec(
+            '''SELECT `result` FROM `historys` WHERE `hash` = %s AND TIMESTAMPDIFF(HOUR, `time`, NOW()) < 24 ORDER BY `time` DESC''',
+            (hash,))
         return cache[0]['result'] if cache else None
 
     def signup(self, username, passhash, site, user_id):
@@ -63,3 +64,7 @@ class Database(MySQL):
 
     def find_torrents_by_id(self, tid):
         return self.exec("SELECT site, sid FROM torrent_records WHERE tid = %s", (tid,))
+
+    def find_tid_by_hash(self, hex_info_hash):
+        tid = self.exec("SELECT tid FROM torrent_records WHERE hex_info_hash = %s", (hex_info_hash,))
+        return tid[0]['tid'] if tid else -1

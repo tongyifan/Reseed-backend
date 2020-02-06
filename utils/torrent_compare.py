@@ -1,7 +1,5 @@
 import json
 
-import app
-
 
 def search_torrent(dir_tree):
     matched_torrents = []
@@ -11,9 +9,11 @@ def search_torrent(dir_tree):
 
 
 def compare_torrents(name, files):
-    torrents = app.redis.get(name)
+    from views import redis, mysql
+
+    torrents = redis.get(name)
     if not torrents:
-        torrents = app.mysql.select_torrent(name)
+        torrents = mysql.select_torrent(name)
     else:
         torrents = json.loads(str(torrents, encoding='utf-8'))
 
