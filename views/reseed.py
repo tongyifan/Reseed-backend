@@ -78,7 +78,7 @@ def find_torrents_by_file_socket(files: dict):
             result.append(torrent)
             send_result(torrent)
         mysql.record_upload_data(current_user.id, file_hash, json.dumps(result),
-                                 socketio.server.environ[request.sid]['X-Real-IP'])
+                                 socketio.server.environ[request.sid]['HTTP_X_REAL_IP'])
 
 
 @socketio.on('tid')
