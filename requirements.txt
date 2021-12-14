@@ -21,7 +21,7 @@ Flask-SocketIO==4.2.1
 greenlet==0.4.15
 idna==2.8
 itsdangerous==1.1.0
-Jinja2==2.10.3
+Jinja2==2.11.3
 limits==1.3
 lxml==4.4.2
 MarkupSafe==1.1.1
