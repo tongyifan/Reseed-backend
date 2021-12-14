@@ -12,7 +12,7 @@ dnspython==1.16.0
 eventlet==0.25.1
 feedparser==5.2.1
 Flask==1.1.1
-Flask-Cors==3.0.8
+Flask-Cors==3.0.9
 Flask-Limiter==1.1.0
 Flask-Login==0.4.1
 Flask-MySQL==1.4.0
