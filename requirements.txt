@@ -2,7 +2,7 @@ bcrypt==3.1.7
 beautifulsoup4==4.8.1
 bencoder==0.2.0
 bs4==0.0.1
-certifi==2019.11.28
+certifi==2022.12.7
 cffi==1.13.2
 cfscrape==2.0.8
 chardet==3.0.4
