@@ -31,7 +31,7 @@ PyMySQL==0.9.3
 PySocks==1.7.1
 python-engineio==3.11.1
 python-socketio==4.4.0
-redis==3.3.11
+redis==4.4.4
 requests==2.22.0
 six==1.13.0
 soupsieve==1.9.5
